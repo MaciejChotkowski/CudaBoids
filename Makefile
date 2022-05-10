@@ -1,0 +1,40 @@
+PROGRAM_NAME=Boids
+CC=gcc
+CPPC=g++
+NVCC=nvcc
+BUILD_DIRECTORY=build
+SOURCE_DIRECTORY=src
+C_FILES=$(wildcard $(SOURCE_DIRECTORY)/*.c) $(wildcard $(SOURCE_DIRECTORY)/ext/*.c)
+CPP_FILES=$(wildcard $(SOURCE_DIRECTORY)/*.cpp) $(wildcard $(SOURCE_DIRECTORY)/ext/*.cpp)
+CU_FILES=$(wildcard $(SOURCE_DIRECTORY)/*.cu) $(wildcard $(SOURCE_DIRECTORY)/ext/*.cu)
+O_CPP_FILES=$(CPP_FILES:$(SOURCE_DIRECTORY)/%.cpp=$(BUILD_DIRECTORY)/%.o)
+O_C_FILES=$(C_FILES:$(SOURCE_DIRECTORY)/%.c=$(BUILD_DIRECTORY)/%.o)
+O_CU_FILES=$(CU_FILES:$(SOURCE_DIRECTORY)/%.cu=$(BUILD_DIRECTORY)/%.o)
+O_FILES=$(O_C_FILES) $(O_CPP_FILES) $(O_CU_FILES)
+LDFLAGS=-lglfw -lGL -lX11 -lpthread -lXrandr -lXi -ldl -DHELLOIMGUI_USE_GLFW_OPENGL3=ON
+
+.PHONY: all clean
+.DEFAULT: all
+
+all: $(PROGRAM_NAME)
+
+$(PROGRAM_NAME) : $(O_FILES)
+	$(NVCC) -o $@ $^ $(LDFLAGS)
+
+$(BUILD_DIRECTORY)/%.o: $(SOURCE_DIRECTORY)/%.cpp | $(BUILD_DIRECTORY)
+	$(CPPC) -c $< -o $@ -DIMGUI_IMPL_OPENGL_LOADER_GLAD
+
+$(BUILD_DIRECTORY)/%.o: $(SOURCE_DIRECTORY)/%.c | $(BUILD_DIRECTORY)
+	$(CC) -c $< -o $@
+
+$(BUILD_DIRECTORY)/%.o: $(SOURCE_DIRECTORY)/%.cu | $(BUILD_DIRECTORY)
+	$(NVCC) -c $< -o $@
+
+$(BUILD_DIRECTORY):
+	mkdir -p $(BUILD_DIRECTORY)/ext
+
+clean:
+	-rm -f $(PROGRAM_NAME)
+	-rm -f $(O_FILES)
+	-rm -rf $(BUILD_DIRECTORY)
+	-rm -f imgui.ini
